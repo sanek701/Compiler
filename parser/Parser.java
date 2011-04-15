@@ -16,34 +16,54 @@ public class Parser {
 
    void match(int t) throws IOException {
       if( look.tag == t ) move();
-      else error("syntax error");
+      else if(t<256) error("Syntax error. Expected "+(char)t+", got "+(char)look.tag);
+      else error("Syntax error. Expected "+t+", got "+look.tag);
    }
 
    public void program() throws IOException {  // program -> block
-      Stmt s = block();
+      top = new Env(top);
+      Stmt s = stmts();
       int begin = s.newlabel();  int after = s.newlabel();
       s.emitlabel(begin);  s.gen(begin, after);  s.emitlabel(after);
    }
 
    Stmt block() throws IOException {  // block -> { decls stmts }
       match('{');  Env savedEnv = top;  top = new Env(top);
-      decls(); Stmt s = stmts();
+      while( look.tag == Tag.BASIC ) decl();
+      Stmt s = stmts();
       match('}');  top = savedEnv;
       return s;
    }
 
-   void decls() throws IOException {
-
-      while( look.tag == Tag.BASIC ) {   // D -> type ID ;
-         Type p = type(); Token tok = look; match(Tag.ID); match(';');
-         Id id = new Id((Word)tok, p, used);
-         top.put( tok, id );
-         used = used + p.width;
+   void decl() throws IOException {
+      Type p = type(); Token tok = look; match(Tag.ID);
+      if( look.tag == '(' ) {
+            match('(');
+            Function f = new Function((Word)tok, p);
+            Env savedEnv = top;
+            top = new Env(top);
+            while( look.tag != ')' ) {
+                  Type argt = type();
+                  match(Tag.ID);
+                  f.addArgument((Word)tok, argt);
+                  top.put((Word)tok, new Id((Word)tok, p, used));
+                  used = used + p.width;
+                  
+            }
+            match(')');
+            match('{');
+            Stmt s = stmts();
+            match('}');
+            top.put( tok, f );
+      } else {
+            Id id = new Id((Word)tok, p, used);
+            top.put( tok, id );
+            used = used + p.width;
+            match(';');
       }
    }
 
    Type type() throws IOException {
-
       Type p = (Type)look;            // expect look.tag == Tag.BASIC 
       match(Tag.BASIC);
       if( look.tag != '[' ) return p; // T -> basic
@@ -53,15 +73,12 @@ public class Parser {
    Type dims(Type p) throws IOException {
       match('[');  Token tok = look;  match(Tag.NUM);  match(']');
       if( look.tag == '[' )
-      p = dims(p);
+            p = dims(p);
       return new Array(((Num)tok).value, p);
    }
 
    Stmt stmts() throws IOException {
-      if ( look.tag == '}' ) {
-		System.err.println("RETURNING Null");
-		return Stmt.Null;
-	}
+      if ( look.tag == '}' || look.tag==Tag.EOF ) return Stmt.Null;
       else return new Seq(stmt(), stmts());
    }
 
@@ -70,6 +87,10 @@ public class Parser {
       Stmt savedStmt;         // save enclosing loop for breaks
 
       switch( look.tag ) {
+
+      case Tag.BASIC:
+            decl();
+            return Stmt.Null;
 
       case ';':
          move();
@@ -105,6 +126,12 @@ public class Parser {
       case Tag.BREAK:
          match(Tag.BREAK); match(';');
          return new Break();
+
+      case Tag.RETURN:
+            match(Tag.RETURN);
+            x = bool();
+            match(';');
+            return new Return(x);
 
       case '{':
          return block();

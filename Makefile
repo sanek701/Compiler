@@ -10,7 +10,7 @@ compile:
 test:
 	@for i in `(cd tests; ls *.t | sed -e 's/.t$$//')`;\
 		do echo $$i.t;\
-		java main.Main <tests/$$i.t >tmp/$$i.i;\
+		java main.Main <tests/$$i.t >tmp/$$i.i 2>/dev/null;\
 		diff tests/$$i.i tmp/$$i.i;\
 	done
 

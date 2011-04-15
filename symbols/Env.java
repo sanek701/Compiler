@@ -9,6 +9,7 @@ public class Env {
 	public Env(Env n) { table = new Hashtable(); prev = n; }
 
 	public void put(Token w, Id i) { table.put(w, i); }
+	public void put(Token w, Function i) { table.put(w, i); }
 
 	public Id get(Token w) {
 		for( Env e = this; e != null; e = e.prev ) {
