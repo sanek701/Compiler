@@ -1,22 +1,36 @@
 package inter;
-import lexer.*; import symbols.*;
+import lexer.*; import symbols.*; import java.util.*;
 
-public class Expr extends Node {
+public class Expr extends Stmt {
 
    public Token op;
    public Type type;
+   private Vector<Call> beforeStmts = null;
 
    Expr(Token tok, Type p) { op = tok; type = p; }
 
-   public Expr gen() { return this; }
    public Expr reduce() { return this; }
+   public Expr gen() { return this; }
+
+	public void addBeforeStmts(Vector<Call> v) {
+		beforeStmts = v;
+	}
+
+	public void gen(int b, int a) { // if there is a function call in the expression
+		if(beforeStmts==null) return;
+		for(Iterator<Call> i = beforeStmts.iterator(); i.hasNext();) {
+			System.err.println("#"+beforeStmts.size());
+			i.next().gen(b, a);
+		}
+	}
 
    public void jumping(int t, int f) { emitjumps(toString(), t, f); }
 
    public void emitjumps(String test, int t, int f) {
+	  gen(0,0);
       if( t != 0 && f != 0 ) {
          emit("if " + test + " goto " + t);
-         emit("goto L" + f);
+         emit("goto " + f);
       }
       else if( t != 0 ) emit("if " + test + " goto " + t);
       else if( f != 0 ) emit("iffalse " + test + " goto " + f);

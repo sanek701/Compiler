@@ -18,6 +18,8 @@ public class SetElem extends Stmt {
    }
 
    public void gen(int b, int a) {
+	  index.reduce().gen(b, a);
+	  expr.reduce().gen(b, a);
       String s1 = index.reduce().toString();
       String s2 = expr.reduce().toString();
       emit(array.toString() + " [ " + s1 + " ] = " + s2);

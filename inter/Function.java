@@ -10,7 +10,6 @@ public class Function extends Stmt {
 	public Type type;
 
 	public Function(Word id, Type p) {
-		//super(id, p); //expr
 		name = id.toString();
 		args = new Hashtable();
 		body = Stmt.Null;
@@ -18,7 +17,7 @@ public class Function extends Stmt {
 		type = p;
 	}
 	
-	public void addArgument(Word id, Type p) { args.put(id, p); }
+	public void addArgument(Temp fid, Type p) { args.put(fid, p); }
 	public void setBody(Stmt s) { body = s; }
 	
 	public void gen(int b, int a) {
@@ -29,6 +28,4 @@ public class Function extends Stmt {
 		int bodyLable = newlabel();
 		body.gen(bodyLable, a);
 	}
-
-//	public String toString() {return "" + op.toString() + offset;}
 }

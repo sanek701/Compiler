@@ -29,11 +29,11 @@ public class Parser {
       if(main==null) throw new Error("No main()");
       
       int begin = s.newlabel();  int after = s.newlabel();
-      s.emitlabel(begin);
-      s.emit("push " + after); // return point
-      s.emit("goto " + main.label);
-      s.gen(begin, after);
-      s.emitlabel(after);
+		s.emitlabel(begin);
+		s.emit("push " + after); // return point
+		s.emit("goto " + main.label);
+		s.gen(begin, after);
+		s.emitlabel(after);
    }
 
    Stmt block() throws IOException {  // block -> { decls stmts }
@@ -61,8 +61,9 @@ public class Parser {
                   Type argt = type();
                   Token arg = look;
                   match(Tag.ID);
-                  f.addArgument((Word)arg, argt);
-                  top.put((Word)arg, new Id((Word)arg, p, used));
+				  Temp fid = new Temp(p);
+                  f.addArgument(fid, argt);
+                  top.put((Word)arg, new Id((Word)arg, argt, used, fid));
                   used = used + p.width;
             }
             match(')');
@@ -81,7 +82,7 @@ public class Parser {
             top.put( tok, id );
             used = used + p.width;
             match(';');
-         
+
             return Stmt.Null;
       }
    }
@@ -145,6 +146,11 @@ public class Parser {
          Stmt.Enclosing = savedStmt;  // reset Stmt.Enclosing
          return donode;
 
+	  case Tag.PUTS:
+			match(Tag.PUTS);
+			x = bool();
+			match(';');
+			return new Puts(x);
       case Tag.BREAK:
          match(Tag.BREAK); match(';');
          return new Break();
@@ -181,11 +187,16 @@ public class Parser {
    }
 
    Expr bool() throws IOException {
+	  Vector<Call> savedCalls = calls;
       calls = new Vector();
+	   
       Expr x = join();
       while( look.tag == Tag.OR ) {
          Token tok = look;  move();  x = new Or(tok, x, join());
       }
+	   
+	  x.addBeforeStmts(calls);
+	  calls = savedCalls;
       return x;
    }
 
@@ -259,25 +270,30 @@ public class Parser {
          error("syntax error");
          return x;
       case Tag.ID:
-         String s = look.toString();
+         Token tok = look;
          Id id;
-         move();
+         match(Tag.ID);
+		
          if(look.tag=='(') {
             match('(');
-            
-            Function f = top.getFunc(look);
+
+            Function f = top.getFunc(tok);
+            if( f == null ) error(tok.toString() + " undeclared");
             id = new Temp(f.type);
             Call call = new Call(f, id);
+            
             while( look.tag != ')' ) {
                if(look.tag==',') match(',');
                x = bool();
                if( !call.addArg(x) ) error("Wrong argumnet count/type");
             }
+			
             match(')');
+			System.err.println("#Add Call "+calls.size());
             calls.add(call);
          } else {
-            id = top.get(look);
-            if( id == null ) error(look.toString() + " undeclared");
+            id = top.get(tok);
+            if( id == null ) error(tok.toString() + " undeclared");
          }
          if( look.tag != '[' ) return id;
          else return offset(id);

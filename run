@@ -1,3 +1,5 @@
+#! /usr/local/bin/ruby
+
 class VariableTable
 	def initialize
 		@table = {}
@@ -80,6 +82,7 @@ class Stack
 	end
 	
 	def pop
+		raise "Empty stack" if @stack.size <= 0
 		@stack.pop
 	end
 	
@@ -97,17 +100,17 @@ class Parser
 		
 		i = 0
 		@lines.map! do |str|
-			while str =~ /^(L|F)\d+:/
-				lable = Regexp.last_match(0)[0...-1]
-				@labels[lable] = i
-				str = str[lable.length+1..-1]
+			while str =~ /^L\d+:/
+				label = Regexp.last_match(0)[1...-1]
+				@labels[label.to_i] = i
+				str = str[label.length+2..-1]
 			end
 			i += 1
 			str
 		end
 	end
 	
-	def lables
+	def labels
 		str = "--\n"
 		@labels.each do |k,v|
 			str+="#{k} = #{v}\n"
@@ -161,9 +164,9 @@ class Parser
 			end
 			
 			# IF IFFALSE
-			if line =~ /^(?<mode>(if|iffalse)) (?<expr>.*)\s+goto\s+(?<lable>L\d+)/
+			if line =~ /^(?<mode>(if|iffalse)) (?<expr>.*)\s+goto\s+(?<label>L\d+)/
 				expr = Regexp.last_match(:expr)
-				lable = Regexp.last_match(:lable)
+				label = Regexp.last_match(:label)
 				mode = Regexp.last_match(:mode)
 				
 				translate(expr);
@@ -172,30 +175,69 @@ class Parser
 				value = eval(expr)
 				
 				if (mode=='if' and value) or (mode=='iffalse' and !value)
-					raise "Unknown lable(#{lable})"if @labels[lable].nil?
-					#puts "GOING TO #{lable}"
-					l = @labels[lable]
+					raise "Unknown label(#{label})"if getline(label).nil?
+					#puts "GOING TO #{label}"
+					l = getline(label)
 				end
 			end
 			
 			# GOTO
-			if line =~ /^goto (?<lable>L\d+)/
-				lable = Regexp.last_match(:lable)
-				raise "Unknown lable(#{lable})"if @labels[lable].nil?
-				#puts "GOING TO #{lable}"
-				l = @labels[lable]
+			if line =~ /^goto\s+(?<label>\d+)/
+				label = Regexp.last_match(:label)
+				raise "Unknown label(#{label})"if getline(label).nil?
+				#puts "GOING TO #{label}"
+				l = getline(label)
+			end
+			
+			if line =~ /^goto\s+(?<id>[a-z]\w*)/
+				id = Regexp.last_match(:id)
+				label = @vars.value(id)
+				raise "Unknown label(#{@vars.value(id)})" if getline(label).nil?
+				#puts "GOING TO #{label} BY ID"
+				l = getline(label)
 			end
 			
 			# PRINT
-			if line =~ /^print\s+(?<id>[a-z]\w*)(\s*\[\s*(?<i>(\d+|[a-z]\w*))\s*\])?/
+			if line =~ /^print\s+(?<expr>.*)/
+				expr = Regexp.last_match(:expr)
+				translate(expr);
+				value = eval(expr)
+				
+				puts "out> #{value}"
+			end
+			
+			# POP
+			if line =~ /^pop\s+(?<id>[a-z]\w*)(\s*\[\s*(?<i>(\d+|[a-z]\w*))\s*\])?/
 				id = Regexp.last_match(:id)
 				index = Regexp.last_match(:i)
-				if index.nil?
-					puts "out> #{@vars.value(id)}"
+				
+				if !@vars.isset(id)
+					if index.nil?
+						#puts "ADD(POP) VAR #{id} = #{@stack.top}"
+						@vars.add( Variable.new( id, @stack.pop ) )
+					else
+						#puts "ADD(POP) ARRAY #{id} whith #{index}"
+						@vars.add( MyArray.new(id) ).set(index, @stack.pop)
+					end
 				else
-					index = mkindex(index)
-					puts "out> #{@vars.array(id, index)}"
+					if index.nil?
+						#puts "POP #{id} = #{@stack.top}"
+						@vars.get(id).set(@stack.pop)
+					else
+						#puts "POP #{id}[#{index}] = #{@stack.top}"
+						@vars.get(id).set(index, @stack.pop)
+					end
 				end
+			end
+			
+			# PUSH
+			if line =~ /^push\s+(?<expr>.*)/
+				expr = Regexp.last_match(:expr)
+				translate(expr);
+				value = eval(expr)
+				
+				#puts "PUSH #{value}"
+				@stack.push( value )
 			end
 		end
 	end
@@ -223,11 +265,15 @@ class Parser
 			return index = @vars.value(index)
 		end
 	end
+	
+	def getline(label)
+		@labels[label.to_i]
+	end
 end
 
 data = File.new(ARGV[0]).readlines
 
 p = Parser.new(data)
-#puts p.lables
+#puts p.labels
 p.parse
 

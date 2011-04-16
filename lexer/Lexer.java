@@ -16,6 +16,7 @@ public class Lexer {
       reserve( new Word("do",    Tag.DO)    );
       reserve( new Word("break", Tag.BREAK) );
       reserve( new Word("return", Tag.RETURN) );
+	  reserve( new Word("puts", Tag.PUTS) );
 
       reserve( Word.True );  reserve( Word.False );
       reserve( Type.Int  );  reserve( Type.Char  );
