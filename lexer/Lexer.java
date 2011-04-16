@@ -1,5 +1,6 @@
 package lexer;
 import java.io.*; import java.util.*; import symbols.*;
+
 public class Lexer {
    public static int line = 1;
    char peek = ' ';
@@ -17,7 +18,6 @@ public class Lexer {
       reserve( new Word("return", Tag.RETURN) );
 
       reserve( Word.True );  reserve( Word.False );
-
       reserve( Type.Int  );  reserve( Type.Char  );
       reserve( Type.Bool );  reserve( Type.Float );
    }

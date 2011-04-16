@@ -1,10 +1,13 @@
 package parser;
-import java.io.*; import lexer.*; import symbols.*; import inter.*;
+import java.io.*; import lexer.*; import symbols.*; import inter.*; import java.util.*;
 
 public class Parser {
 
    private Lexer lex;    // lexical analyzer for this parser
    private Token look;   // lookahead tagen
+   private Function curF = null;    // processing function
+   private Function main = null;    // main function
+   private Vector<Call> calls;
    Env top = null;       // current or top symbol table
    int used = 0;         // storage used for declarations
 
@@ -23,8 +26,14 @@ public class Parser {
    public void program() throws IOException {  // program -> block
       top = new Env(top);
       Stmt s = stmts();
+      if(main==null) throw new Error("No main()");
+      
       int begin = s.newlabel();  int after = s.newlabel();
-      s.emitlabel(begin);  s.gen(begin, after);  s.emitlabel(after);
+      s.emitlabel(begin);
+      s.emit("push " + after); // return point
+      s.emit("goto " + main.label);
+      s.gen(begin, after);
+      s.emitlabel(after);
    }
 
    Stmt block() throws IOException {  // block -> { decls stmts }
@@ -35,31 +44,45 @@ public class Parser {
       return s;
    }
 
-   void decl() throws IOException {
+   Stmt decl() throws IOException {
       Type p = type(); Token tok = look; match(Tag.ID);
+      
       if( look.tag == '(' ) {
-            match('(');
             Function f = new Function((Word)tok, p);
+            if( f.name.equals("main") ) main = f;
+         
             Env savedEnv = top;
             top = new Env(top);
+         
+            match('(');
             while( look.tag != ')' ) {
+                  if( f.name.equals("main") ) throw new Error("Main should not have arguments()");
+                  if(look.tag==',') match(',');
                   Type argt = type();
+                  Token arg = look;
                   match(Tag.ID);
-                  f.addArgument((Word)tok, argt);
-                  top.put((Word)tok, new Id((Word)tok, p, used));
+                  f.addArgument((Word)arg, argt);
+                  top.put((Word)arg, new Id((Word)arg, p, used));
                   used = used + p.width;
-                  
             }
             match(')');
+            
             match('{');
             Stmt s = stmts();
+            f.setBody(s);
             match('}');
+            
+            top = savedEnv;
             top.put( tok, f );
+            
+            return f;
       } else {
             Id id = new Id((Word)tok, p, used);
             top.put( tok, id );
             used = used + p.width;
             match(';');
+         
+            return Stmt.Null;
       }
    }
 
@@ -89,8 +112,7 @@ public class Parser {
       switch( look.tag ) {
 
       case Tag.BASIC:
-            decl();
-            return Stmt.Null;
+         return decl();
 
       case ';':
          move();
@@ -148,7 +170,7 @@ public class Parser {
       if( id == null ) error(t.toString() + " undeclared");
 
       if( look.tag == '=' ) {       // S -> id = E ;
-         move();  stmt = new Set(id, bool());
+         move();  stmt = new inter.Set(id, bool());
       }
       else {                        // S -> L = E ;
          Access x = offset(id);
@@ -159,6 +181,7 @@ public class Parser {
    }
 
    Expr bool() throws IOException {
+      calls = new Vector();
       Expr x = join();
       while( look.tag == Tag.OR ) {
          Token tok = look;  move();  x = new Or(tok, x, join());
@@ -237,9 +260,25 @@ public class Parser {
          return x;
       case Tag.ID:
          String s = look.toString();
-         Id id = top.get(look);
-         if( id == null ) error(look.toString() + " undeclared");
+         Id id;
          move();
+         if(look.tag=='(') {
+            match('(');
+            
+            Function f = top.getFunc(look);
+            id = new Temp(f.type);
+            Call call = new Call(f, id);
+            while( look.tag != ')' ) {
+               if(look.tag==',') match(',');
+               x = bool();
+               if( !call.addArg(x) ) error("Wrong argumnet count/type");
+            }
+            match(')');
+            calls.add(call);
+         } else {
+            id = top.get(look);
+            if( id == null ) error(look.toString() + " undeclared");
+         }
          if( look.tag != '[' ) return id;
          else return offset(id);
       }

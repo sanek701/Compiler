@@ -18,4 +18,12 @@ public class Env {
 		}
 		return null;
 	}
+	
+	public Function getFunc(Token w) {
+		for( Env e = this; e != null; e = e.prev ) {
+			Function found = (Function)(e.table.get(w));
+			if( found != null ) return found;
+		}
+		return null;
+	}
 }

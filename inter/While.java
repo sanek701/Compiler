@@ -16,6 +16,6 @@ public class While extends Stmt {
       expr.jumping(0, a);
       int label = newlabel();   // label for stmt
       emitlabel(label); stmt.gen(label, b);
-      emit("goto L" + b);
+      emit("goto " + b);
    }
 }

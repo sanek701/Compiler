@@ -22,7 +22,7 @@ public class Logical extends Expr {
       Temp temp = new Temp(type);
       this.jumping(0,f);
       emit(temp.toString() + " = true");
-      emit("goto L" + a);
+      emit("goto " + a);
       emitlabel(f); emit(temp.toString() + " = false");
       emitlabel(a);
       return temp;
