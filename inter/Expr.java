@@ -5,14 +5,14 @@ public class Expr extends Stmt {
 
    public Token op;
    public Type type;
-   private Vector<Call> beforeStmts = null;
+   private LinkedList<Call> beforeStmts = null;
 
    Expr(Token tok, Type p) { op = tok; type = p; }
 
    public Expr reduce() { return this; }
    public Expr gen() { return this; }
 
-	public void addBeforeStmts(Vector<Call> v) {
+	public void addBeforeStmts(LinkedList<Call> v) {
 		beforeStmts = v;
 	}
 

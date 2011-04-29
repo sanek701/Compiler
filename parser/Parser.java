@@ -7,7 +7,7 @@ public class Parser {
    private Token look;   // lookahead tagen
    private Function curF = null;    // processing function
    private Function main = null;    // main function
-   private Vector<Call> calls;
+   private LinkedList<Call> calls;
    Env top = null;       // current or top symbol table
    int used = 0;         // storage used for declarations
 
@@ -187,16 +187,20 @@ public class Parser {
    }
 
    Expr bool() throws IOException {
-	  Vector<Call> savedCalls = calls;
-      calls = new Vector();
+	  LinkedList<Call> savedCalls = calls;
+      calls = new LinkedList();
 	   
       Expr x = join();
       while( look.tag == Tag.OR ) {
          Token tok = look;  move();  x = new Or(tok, x, join());
       }
-	   
-	  x.addBeforeStmts(calls);
-	  calls = savedCalls;
+	  
+	  if(savedCalls==null) { //that was a root of the expression
+		System.err.println("#Expr has "+calls.size()+" calls");
+		x.addBeforeStmts(calls);
+      } else {
+		calls.addAll(savedCalls);
+      }
       return x;
    }
 
