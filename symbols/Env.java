@@ -11,6 +11,10 @@ public class Env {
 	public void put(Token w, Id i) { table.put(w, i); }
 	public void put(Token w, Function i) { table.put(w, i); }
 
+	public java.util.Set<Token> localVars() {
+		return table.keySet();
+	}
+
 	public Id get(Token w) {
 		for( Env e = this; e != null; e = e.prev ) {
 			Id found = (Id)(e.table.get(w));

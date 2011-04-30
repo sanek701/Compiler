@@ -49,8 +49,10 @@ public class Parser {
       
       if( look.tag == '(' ) {
             Function f = new Function((Word)tok, p);
+		  	curF = f;
             if( f.name.equals("main") ) main = f;
-         
+
+		  	top.put( tok, f );
             Env savedEnv = top;
             top = new Env(top);
          
@@ -61,21 +63,19 @@ public class Parser {
                   Type argt = type();
                   Token arg = look;
                   match(Tag.ID);
-				  Temp fid = new Temp(p);
-                  f.addArgument(fid, argt);
-                  top.put((Word)arg, new Id((Word)arg, argt, used, fid));
+				  Id id = new Id((Word)arg, argt, used);
+                  f.addArgument((Word)arg, argt);
+                  top.put((Word)arg, id);
                   used = used + p.width;
             }
             match(')');
             
             match('{');
             Stmt s = stmts();
-            f.setBody(s);
+            f.setBody(s, top);
             match('}');
             
             top = savedEnv;
-            top.put( tok, f );
-            
             return f;
       } else {
             Id id = new Id((Word)tok, p, used);
@@ -159,7 +159,7 @@ public class Parser {
             match(Tag.RETURN);
             x = bool();
             match(';');
-            return new Return(x);
+            return new Return(x, curF);
 
       case '{':
          return block();
@@ -195,9 +195,9 @@ public class Parser {
          Token tok = look;  move();  x = new Or(tok, x, join());
       }
 	  
-	  if(savedCalls==null) { //that was a root of the expression
-		System.err.println("#Expr has "+calls.size()+" calls");
+	  if(savedCalls==null) { // that was a root of the expression
 		x.addBeforeStmts(calls);
+		calls = null;
       } else {
 		calls.addAll(savedCalls);
       }
@@ -278,22 +278,25 @@ public class Parser {
          Id id;
          match(Tag.ID);
 		
-         if(look.tag=='(') {
+         if(look.tag=='(') { // fuction call
             match('(');
 
             Function f = top.getFunc(tok);
             if( f == null ) error(tok.toString() + " undeclared");
-            id = new Temp(f.type);
-            Call call = new Call(f, id);
+            
+            id = new Temp(f.type); // var for returned value
+            top.put(new Word(id.toString(), Tag.TEMP), id); // add to local vars
+            
+            Call call = new Call(f, id, curF);
             
             while( look.tag != ')' ) {
                if(look.tag==',') match(',');
                x = bool();
-               if( !call.addArg(x) ) error("Wrong argumnet count/type");
+               if( !call.addArg(x) ) error("Wrong argumnet type or too many args");
             }
 			
             match(')');
-			System.err.println("#Add Call "+calls.size());
+			if(!call.checkArg()) error("Wrong argumnet count");
             calls.add(call);
          } else {
             id = top.get(tok);

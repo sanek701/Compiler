@@ -19,7 +19,6 @@ public class Expr extends Stmt {
 	public void gen(int b, int a) { // if there is a function call in the expression
 		if(beforeStmts==null) return;
 		for(Iterator<Call> i = beforeStmts.iterator(); i.hasNext();) {
-			System.err.println("#"+beforeStmts.size());
 			i.next().gen(b, a);
 		}
 	}

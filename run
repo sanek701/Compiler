@@ -89,6 +89,10 @@ class Stack
 	def top
 		@stack[-1]
 	end
+	
+	def inspect
+		@stack.inspect
+	end
 end
 
 class Parser
@@ -164,7 +168,7 @@ class Parser
 			end
 			
 			# IF IFFALSE
-			if line =~ /^(?<mode>(if|iffalse)) (?<expr>.*)\s+goto\s+(?<label>L\d+)/
+			if line =~ /^(?<mode>(if|iffalse)) (?<expr>.*)\s+goto\s+(?<label>\d+)/
 				expr = Regexp.last_match(:expr)
 				label = Regexp.last_match(:label)
 				mode = Regexp.last_match(:mode)
@@ -181,19 +185,19 @@ class Parser
 				end
 			end
 			
-			# GOTO
-			if line =~ /^goto\s+(?<label>\d+)/
+			# GOTO/CALL/RET
+			if line =~ /^(goto|call|ret)\s+(?<label>\d+)/
 				label = Regexp.last_match(:label)
 				raise "Unknown label(#{label})"if getline(label).nil?
 				#puts "GOING TO #{label}"
 				l = getline(label)
 			end
 			
-			if line =~ /^goto\s+(?<id>[a-z]\w*)/
+			if line =~ /^(goto|call|ret)\s+(?<id>[a-z]\w*)/
 				id = Regexp.last_match(:id)
 				label = @vars.value(id)
 				raise "Unknown label(#{@vars.value(id)})" if getline(label).nil?
-				#puts "GOING TO #{label} BY ID"
+				#puts "GOING TO #{label} BY ID #{id}"
 				l = getline(label)
 			end
 			
@@ -207,37 +211,42 @@ class Parser
 			end
 			
 			# POP
+			
 			if line =~ /^pop\s+(?<id>[a-z]\w*)(\s*\[\s*(?<i>(\d+|[a-z]\w*))\s*\])?/
 				id = Regexp.last_match(:id)
 				index = Regexp.last_match(:i)
-				
 				if !@vars.isset(id)
 					if index.nil?
-						#puts "ADD(POP) VAR #{id} = #{@stack.top}"
+						#puts "ADD(POP) VAR #{id} = #{@stack.top} #{@stack.inspect}"
 						@vars.add( Variable.new( id, @stack.pop ) )
 					else
-						#puts "ADD(POP) ARRAY #{id} whith #{index}"
+						#puts "ADD(POP) ARRAY #{id} whith #{index} #{@stack.inspect}"
 						@vars.add( MyArray.new(id) ).set(index, @stack.pop)
 					end
 				else
 					if index.nil?
-						#puts "POP #{id} = #{@stack.top}"
+						#puts "POP #{id} = #{@stack.top} #{@stack.inspect}"
 						@vars.get(id).set(@stack.pop)
 					else
-						#puts "POP #{id}[#{index}] = #{@stack.top}"
+						#puts "POP #{id}[#{index}] = #{@stack.top} #{@stack.inspect}"
 						@vars.get(id).set(index, @stack.pop)
 					end
 				end
 			end
+			@stack.pop if line =~ /^pop$/
 			
 			# PUSH
 			if line =~ /^push\s+(?<expr>.*)/
 				expr = Regexp.last_match(:expr)
-				translate(expr);
-				value = eval(expr)
+				if expr =~ /^t\d+$/ && @vars.get(expr).nil? #sometimes it can be undefined
+					@stack.push(nil)
+				else
+					translate(expr);
+					value = eval(expr)
 				
-				#puts "PUSH #{value}"
-				@stack.push( value )
+					@stack.push( value )
+					#puts "PUSH #{value}  #{@stack.inspect}"
+				end
 			end
 		end
 	end

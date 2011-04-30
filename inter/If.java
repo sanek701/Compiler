@@ -13,6 +13,7 @@ public class If extends Stmt {
    public void gen(int b, int a) {
       int label = newlabel(); // label for the code for stmt
       expr.jumping(0, a);     // fall through on true, goto a on false
-      emitlabel(label); stmt.gen(label, a);
+      emitlabel(label);
+	  stmt.gen(label, a); // if there are calls in expr
    }
 }
