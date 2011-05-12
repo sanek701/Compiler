@@ -7,7 +7,7 @@ int fib(int n) {
 int main() {
 	int i;
 	i = 0;
-	while(i<=10) {
+	while(i<=15) {
 		puts fib(i);
 		i = i+1;
 	}

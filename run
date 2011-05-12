@@ -211,7 +211,6 @@ class Parser
 			end
 			
 			# POP
-			
 			if line =~ /^pop\s+(?<id>[a-z]\w*)(\s*\[\s*(?<i>(\d+|[a-z]\w*))\s*\])?/
 				id = Regexp.last_match(:id)
 				index = Regexp.last_match(:i)
@@ -238,7 +237,7 @@ class Parser
 			# PUSH
 			if line =~ /^push\s+(?<expr>.*)/
 				expr = Regexp.last_match(:expr)
-				if expr =~ /^t\d+$/ && @vars.get(expr).nil? #sometimes it can be undefined
+				if expr =~ /^[a-z]\w*$/ && @vars.get(expr).nil? #sometimes it can be undefined
 					@stack.push(nil)
 				else
 					translate(expr);
@@ -249,6 +248,7 @@ class Parser
 				end
 			end
 		end
+		puts "Return code: #{@stack.pop}"
 	end
 	
 	private

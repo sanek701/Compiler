@@ -49,10 +49,10 @@ public class Parser {
       
       if( look.tag == '(' ) {
             Function f = new Function((Word)tok, p);
-		  	curF = f;
+		  	    curF = f;
             if( f.name.equals("main") ) main = f;
 
-		  	top.put( tok, f );
+		  	    top.put( tok, f );
             Env savedEnv = top;
             top = new Env(top);
          
@@ -63,7 +63,7 @@ public class Parser {
                   Type argt = type();
                   Token arg = look;
                   match(Tag.ID);
-				  Id id = new Id((Word)arg, argt, used);
+				          Id id = new Id((Word)arg, argt, used);
                   f.addArgument((Word)arg, argt);
                   top.put((Word)arg, id);
                   used = used + p.width;
