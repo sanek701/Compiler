@@ -4,6 +4,6 @@ int zero(int n) {
 }
 
 int main() {
-	puts zero(2);
+	puts zero(5);
 	return 0;
 }

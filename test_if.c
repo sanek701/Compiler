@@ -9,5 +9,6 @@ int main() {
 	if(sum(a,b)==sum(b,a)) {
 		puts 1;
 	}
+	return 0;
 }
 

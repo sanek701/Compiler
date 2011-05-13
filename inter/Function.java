@@ -4,6 +4,7 @@ import lexer.*; import symbols.*; import java.util.*;
 public class Function extends Stmt {
 
 	private Stmt body;
+	private boolean hasReturn = false;
 	public Hashtable args;
 	public int label;
 	public String name;
@@ -21,10 +22,13 @@ public class Function extends Stmt {
 	}
 	
 	public void addArgument(Word id, Type p) { args.put(id, p); }
+	public void addReturn() { hasReturn = true; }
 	public void setBody(Stmt s, Env e) {
 		body = s;
 		env = e;
 		e.put(new Word(ret.toString(), Tag.TEMP), ret); // adding ret to save it before calls
+		if(!hasReturn)
+			 throw new Error("Function "+name+" should return value");
 	}
 	
 	public void gen(int b, int a) {

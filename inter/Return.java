@@ -9,6 +9,9 @@ public class Return extends Stmt {
 	public Return(Expr e, Function func) {
 		expr = e;
 		f = func;
+		if(expr.type != f.type)
+			throw new Error("Returning "+e.type+" insted "+f.type);
+		f.addReturn();
 	}
 	
 	public void gen(int b, int a) {

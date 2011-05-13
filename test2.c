@@ -8,4 +8,5 @@ int main() {
 	b = 3;
 
 	puts plus(a-1, b+1)*2;
+	return 0;
 }
