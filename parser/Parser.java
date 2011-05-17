@@ -16,7 +16,8 @@ public class Parser {
 
    void match(int t) throws IOException {
       if( look.tag == t ) move();
-      else error("syntax error");
+      else if(t<256) error("Syntax error. Expected "+(char)t+", got "+(char)look.tag);
+      else error("Syntax error. Expected "+t+", got "+look.tag);
    }
 
    public void program() throws IOException {  // program -> block
@@ -27,23 +28,34 @@ public class Parser {
 
    Stmt block() throws IOException {  // block -> { decls stmts }
       match('{');  Env savedEnv = top;  top = new Env(top);
-      decls(); Stmt s = stmts();
+      Stmt s = stmts();
       match('}');  top = savedEnv;
       return s;
    }
 
-   void decls() throws IOException {
-
-      while( look.tag == Tag.BASIC ) {   // D -> type ID ;
-         Type p = type(); Token tok = look; match(Tag.ID); match(';');
-         Id id = new Id((Word)tok, p, used);
-         top.put( tok, id );
-         used = used + p.width;
-      }
+   Stmt decl() throws IOException {
+			boolean constant = false;
+           if (look.tag == Tag.CONST){
+               constant = true;
+               match(Tag.CONST);
+           }
+           Type p = type(); Token tok = look;
+           
+			Id id = new Id((Word)tok, p, used, constant);
+           top.put( tok, id );
+			used = used + p.width;
+			
+           if (constant) {
+			   return assign();
+           } else {
+				match(Tag.ID);
+				match(';'); 
+				return Stmt.Null;
+           }
    }
 
    Type type() throws IOException {
-
+       
       Type p = (Type)look;            // expect look.tag == Tag.BASIC 
       match(Tag.BASIC);
       if( look.tag != '[' ) return p; // T -> basic
@@ -58,10 +70,7 @@ public class Parser {
    }
 
    Stmt stmts() throws IOException {
-      if ( look.tag == '}' ) {
-		System.err.println("RETURNING Null");
-		return Stmt.Null;
-	}
+      if ( look.tag == '}' ) return Stmt.Null;
       else return new Seq(stmt(), stmts());
    }
 
@@ -70,6 +79,9 @@ public class Parser {
       Stmt savedStmt;         // save enclosing loop for breaks
 
       switch( look.tag ) {
+		case Tag.CONST:
+		case Tag.BASIC:
+			return decl();
 
       case ';':
          move();
@@ -118,14 +130,20 @@ public class Parser {
       Stmt stmt;  Token t = look;
       match(Tag.ID);
       Id id = top.get(t);
+      Expr e = bool();
+		
       if( id == null ) error(t.toString() + " undeclared");
-
+      if( id.constant ) {
+		if(id.value!=null) error(t.toString() + " constant");
+		id.setValue(e);
+		}
+      
       if( look.tag == '=' ) {       // S -> id = E ;
-         move();  stmt = new Set(id, bool());
+         move();  stmt = new Set(id, e);
       }
       else {                        // S -> L = E ;
          Access x = offset(id);
-         match('=');  stmt = new SetElem(x, bool());
+         match('=');  stmt = new SetElem(x, e);
       }
       match(';');
       return stmt;
@@ -206,7 +224,7 @@ public class Parser {
       case Tag.FALSE:
          x = Constant.False;                  move(); return x;
       default:
-         error("syntax error");
+         error("syntax error ("+look+")");
          return x;
       case Tag.ID:
          String s = look.toString();

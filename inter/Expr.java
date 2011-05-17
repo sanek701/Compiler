@@ -5,11 +5,14 @@ public class Expr extends Node {
 
    public Token op;
    public Type type;
+   public boolean calculatable = false;
 
-   Expr(Token tok, Type p) { op = tok; type = p; }
+   Expr(Token tok, Type p) { op = tok; type = p;}
 
    public Expr gen() { return this; }
    public Expr reduce() { return this; }
+   public int calculateInt() { return 0; }
+   public float calculateFloat() { return 0; }
 
    public void jumping(int t, int f) { emitjumps(toString(), t, f); }
 
@@ -22,5 +25,6 @@ public class Expr extends Node {
       else if( f != 0 ) emit("iffalse " + test + " goto L" + f);
       else ; // nothing since both t and f fall through
    }
+   
    public String toString() { return op.toString(); }
 }
