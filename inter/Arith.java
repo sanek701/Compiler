@@ -15,36 +15,18 @@ public class Arith extends Op {
 
    public Expr gen() {
 	  if(calculatable) {
-		  if(type==Type.Int) return new Constant(calculateInt());
-		  if(type==Type.Float) return new Constant(calculateFloat());
+		  Constant c1 = expr1.calculate();
+		  Constant c2 = expr2.calculate();
+		  switch(op.toString().charAt(0)) {
+			case '+':
+				return Constant.sum(c1, c2);
+			case '*':
+				//return Constant.mul(c1, c2);
+		  }
 		}
       return new Arith(op, expr1.reduce(), expr2.reduce());
    }
-   
-   public int calculateInt() {
-		int e1 = expr1.calculateInt();
-		int e2 = expr2.calculateInt();
-		switch(op.toString().charAt(0)) {
-			case '+':
-				return e1+e2;
-			case '*':
-				return e1*e2;
-		}
-		return 0;
-	}
 	
-	public float calculateFloat() {
-		float e1 = expr1.calculateFloat();
-		float e2 = expr2.calculateFloat();
-		switch(op.toString().charAt(0)) {
-			case '+':
-				return e1+e2;
-			case '*':
-				return e1*e2;
-		}
-		return 0;
-	}
-
    public String toString() {
 	  if(calculatable)
 		return expr1.toString()+" ^"+op.toString()+"^ "+expr2.toString();

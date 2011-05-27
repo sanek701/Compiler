@@ -11,8 +11,7 @@ public class Expr extends Node {
 
    public Expr gen() { return this; }
    public Expr reduce() { return this; }
-   public int calculateInt() { return 0; }
-   public float calculateFloat() { return 0; }
+   public Constant calculate() { return null; }
 
    public void jumping(int t, int f) { emitjumps(toString(), t, f); }
 

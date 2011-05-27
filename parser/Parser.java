@@ -42,7 +42,7 @@ public class Parser {
            Type p = type(); Token tok = look;
            
 			Id id = new Id((Word)tok, p, used, constant);
-           top.put( tok, id );
+			top.put( tok, id );
 			used = used + p.width;
 			
            if (constant) {
@@ -127,24 +127,21 @@ public class Parser {
    }
 
    Stmt assign() throws IOException {
-      Stmt stmt;  Token t = look;
+      Stmt stmt; Expr e; Token t = look;
       match(Tag.ID);
       Id id = top.get(t);
-      Expr e = bool();
 		
       if( id == null ) error(t.toString() + " undeclared");
-      if( id.constant ) {
-		if(id.value!=null) error(t.toString() + " constant");
-		id.setValue(e);
-		}
+      if( id.constant && id.value!=null) error(t.toString() + " constant");
       
       if( look.tag == '=' ) {       // S -> id = E ;
-         move();  stmt = new Set(id, e);
+         match('='); e = bool(); stmt = new Set(id, e);
       }
       else {                        // S -> L = E ;
          Access x = offset(id);
-         match('=');  stmt = new SetElem(x, e);
+         match('='); e = bool(); stmt = new SetElem(x, e);
       }
+      if(id.constant) id.setValue(e);
       match(';');
       return stmt;
    }
