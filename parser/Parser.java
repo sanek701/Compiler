@@ -6,6 +6,7 @@ public class Parser {
    private Lexer lex;    // lexical analyzer for this parser
    private Token look;   // lookahead tagen
    Env top = null;       // current or top symbol table
+   Switch curSwitch = null;
    int used = 0;         // storage used for declarations
 
    public Parser(Lexer l) throws IOException { lex = l; move(); }
@@ -16,7 +17,7 @@ public class Parser {
 
    void match(int t) throws IOException {
       if( look.tag == t ) move();
-      else error("syntax error");
+      else error("Syntax error. Expected `"+(char)t+"`("+t+"), got `"+(char)look.tag+"`("+look.tag+")");
    }
 
    public void program() throws IOException {  // program -> block
@@ -43,7 +44,6 @@ public class Parser {
    }
 
    Type type() throws IOException {
-
       Type p = (Type)look;            // expect look.tag == Tag.BASIC 
       match(Tag.BASIC);
       if( look.tag != '[' ) return p; // T -> basic
@@ -59,14 +59,13 @@ public class Parser {
 
    Stmt stmts() throws IOException {
       if ( look.tag == '}' ) {
-		System.err.println("RETURNING Null");
 		return Stmt.Null;
 	}
       else return new Seq(stmt(), stmts());
    }
 
    Stmt stmt() throws IOException {
-      Expr x;  Stmt s, s1, s2;
+      Expr x;  Stmt s, s1, s2; Case cas;
       Stmt savedStmt;         // save enclosing loop for breaks
 
       switch( look.tag ) {
@@ -101,6 +100,46 @@ public class Parser {
          donode.init(s1, x);
          Stmt.Enclosing = savedStmt;  // reset Stmt.Enclosing
          return donode;
+
+      case Tag.SWITCH:
+            match(Tag.SWITCH); match('(');
+            Id id = top.get(look); match(Tag.ID); match(')');
+            if( id == null ) error(look.toString() + " undeclared");
+            Switch switchnode;
+            if( look.tag != '[' ) switchnode  = new Switch(id);
+            else switchnode  = new Switch(offset(id));
+
+            Switch savedSwitch = curSwitch;
+            curSwitch = switchnode;
+            savedStmt = Stmt.Enclosing;
+            Stmt.Enclosing = curSwitch;
+
+            s1 = stmt();
+            curSwitch.init(s1);
+
+            Stmt.Enclosing = savedStmt;
+            curSwitch = savedSwitch;
+            return switchnode;
+
+      case Tag.CASE:
+            match(Tag.CASE);
+            if(look.tag!=Tag.NUM  && look.tag!=Tag.NUM &&
+               look.tag!=Tag.TRUE && look.tag!=Tag.FALSE)
+                                error("case should be constant");
+            if(curSwitch==null) error("case out of switch");
+            
+            Token tok = look; move();
+            cas = new Case(tok);
+            match(':');
+            curSwitch.addCase(cas);
+            return cas;
+
+      case Tag.DEFAULT:
+            match(Tag.DEFAULT); match(':');
+            if(curSwitch==null) error("case out of switch");
+            cas = new Case(null);
+            curSwitch.addDefault(cas);
+            return cas;
 
       case Tag.BREAK:
          match(Tag.BREAK); match(';');
