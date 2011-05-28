@@ -17,12 +17,7 @@ public class Constant extends Expr {
       if ( this == True && t != 0 ) emit("goto L" + t);
       else if ( this == False && f != 0) emit("goto L" + f);
    }
-   
-   public static Constant sum(Constant c1, Constant c2) {
-	   Type type = Type.max(c1.type, c2.type);
-	   //if(type == Type.Int)
-			return new Constant( (int)(((Num)c1.op).value)+(int)(((Num)c2.op).value) );
-	  // if(type == Type.Float)
-		//	return new Constant( (float)(c1.op.value)+(float)(c2.op.value) );
-	}
+
+   public int toInt() { return (type==Type.Int) ? ((Num)op).value : (int)((Real)op).value; }
+   public float toFloat() { return (type==Type.Int) ? (float)((Num)op).value : ((Real)op).value; }
 }

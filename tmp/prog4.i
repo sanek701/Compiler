@@ -1,10 +1,12 @@
-L1:L3:	if peek == BLANK goto L7
-	iffalse peek == TAB goto L6
-L7:L5:	goto L4
-L6:	iffalse peek == NEWLINE goto L9
-L8:	line = line + 1
+L1:	readch = 55
+L3:	aa = 3.4
+L4:L5:	if peek == BLANK goto L9
+	iffalse peek == TAB goto L8
+L9:L7:	goto L6
+L8:	iffalse peek == NEWLINE goto L11
+L10:	line = line + 1
+	goto L6
+L11:	goto L2
+L6:	peek = readch
 	goto L4
-L9:	goto L2
-L4:	peek = readch
-	goto L1
 L2:

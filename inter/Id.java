@@ -15,9 +15,10 @@ public class Id extends Expr {
 	}
 	
 	public void setValue(Expr e) {
-		Expr c = e.gen();
-		System.err.println(">>"+e.gen());
+		value = e.gen().calculate();
 	}
+
+	public Constant calculate() { return value; }
     
 //	public String toString() {return "" + op.toString() + offset;}
 }

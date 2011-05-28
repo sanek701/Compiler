@@ -34,23 +34,23 @@ public class Parser {
    }
 
    Stmt decl() throws IOException {
-			boolean constant = false;
+           boolean constant = false;
            if (look.tag == Tag.CONST){
                constant = true;
                match(Tag.CONST);
            }
            Type p = type(); Token tok = look;
            
-			Id id = new Id((Word)tok, p, used, constant);
-			top.put( tok, id );
-			used = used + p.width;
+           Id id = new Id((Word)tok, p, used, constant);
+           top.put( tok, id );
+           used = used + p.width;
 			
            if (constant) {
-			   return assign();
+		return assign();
            } else {
-				match(Tag.ID);
-				match(';'); 
-				return Stmt.Null;
+		match(Tag.ID);
+		match(';'); 
+		return Stmt.Null;
            }
    }
 
@@ -79,9 +79,9 @@ public class Parser {
       Stmt savedStmt;         // save enclosing loop for breaks
 
       switch( look.tag ) {
-		case Tag.CONST:
-		case Tag.BASIC:
-			return decl();
+      case Tag.CONST:
+      case Tag.BASIC:
+         return decl();
 
       case ';':
          move();
