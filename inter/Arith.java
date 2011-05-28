@@ -19,21 +19,33 @@ public class Arith extends Op {
 		  Constant c2 = expr2.gen().calculate();
 		  switch(op.tag) {
 			case '+':
-				return sum(c1, c2);
+				return add(c1, c2);
+			case '-':
+				return sub(c1, c2);
 			case '*':
 				return mul(c1, c2);
+			case '/':
+				return div(c1, c2);
 		  }
 		}
       return new Arith(op, expr1.reduce(), expr2.reduce());
    }
 
-   public Constant sum(Constant c1, Constant c2) {
+   public Constant add(Constant c1, Constant c2) {
 	   Type type = Type.max(c1.type, c2.type);
 	   if(type==Type.Float)
 			return new Constant( c1.toFloat()+c2.toFloat() );
 	   else
 			return new Constant( c1.toInt()+c2.toInt() );
    }
+	 
+	public Constant sub(Constant c1, Constant c2) {
+	   Type type = Type.max(c1.type, c2.type);
+	   if(type==Type.Float)
+			return new Constant( c1.toFloat()-c2.toFloat() );
+	   else
+			return new Constant( c1.toInt()-c2.toInt() );
+	}
 
    public Constant mul(Constant c1, Constant c2) {
 	   Type type = Type.max(c1.type, c2.type);
@@ -42,6 +54,14 @@ public class Arith extends Op {
            else
 			return new Constant( c1.toInt()*c2.toInt() );   
    }
+	 
+	public Constant div(Constant c1, Constant c2) {
+	   Type type = Type.max(c1.type, c2.type);
+	   if(type == Type.Float)
+			return new Constant( c1.toFloat()/c2.toFloat() );
+           else
+			return new Constant( c1.toInt()/c2.toInt() );   
+	}
 	
    public String toString() {
 	  if(calculatable)
